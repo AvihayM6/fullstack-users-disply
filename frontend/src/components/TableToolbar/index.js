@@ -6,13 +6,23 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import AddIcon from '@mui/icons-material/Add'
 import { alpha } from '@mui/material/styles'
+import axios from 'axios'
 
 
-export const TableToolbar = ({numSelected, setAddData, addData, selected, setSelected, rows, setRows, filterRow, setFilterRow}) => {
-  /* TODO: Need to continue - remove the selected from rows */
-  const deleteSelectedItems = () => {
-    setRows(rows.filter((row) => !selected.includes(row.name)))
+export const TableToolbar = ({numSelected, setAddData, addData, selected, setSelected, rows, setRows, filterRow, setFilterRow, fetchData}) => {
+  const DB_URL = 'http://localhost:8000/users'
+
+  const deleteSelectedItems = async () => {
+    selected.forEach(async (selectedElement) => {
+      await axios.delete(DB_URL+`/${selectedElement}`,
+      {data: {
+          _id: selectedElement
+        }}
+        )
+      await fetchData()
+    })
     setSelected([])
+    console.log('selected', selected)
   }
   
   return (
@@ -25,21 +35,17 @@ export const TableToolbar = ({numSelected, setAddData, addData, selected, setSel
                  }),
           }}>
           {numSelected > 0 ? (
-            <Typography
-              sx={{ flex: '1 1 100%' }}
-              color="inherit"
-              variant="subtitle1"
-              component="div"
-            >
+            <Typography sx={{ flex: '1 1 100%' }}
+                        color="inherit"
+                        variant="subtitle1"
+                        component="div">
               {numSelected} selected
             </Typography>
           ) : (
-            <Typography
-              sx={{ flex: '1 1 100%' }}
-              variant="h6"
-              id="tableTitle"
-              component="div"
-            >
+            <Typography sx={{ flex: '1 1 100%' }}
+                        variant="h6"
+                        id="tableTitle"
+                        component="div">
               Users Management
             </Typography>
           )}

@@ -19,15 +19,7 @@ import Tooltip from '@mui/material/Tooltip'
 import { visuallyHidden } from '@mui/utils'
 import '../../style/OwnTable.css'
 import {TableToolbar} from '../TableToolbar'
-
-function createData(name, id, phoneNumber, ip) {
-  return {
-    name,
-    id,
-    phoneNumber,
-    ip,
-  }
-}
+import axios from 'axios'
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -59,13 +51,13 @@ function stableSort(array, comparator) {
 
 const headCells = [
   {
-    id: 'name',
+    id: 'userName',
     numeric: false,
     disablePadding: true,
     label: 'Full Name',
   },
   {
-    id: 'id',
+    id: 'myId',
     numeric: false,
     disablePadding: false,
     label: 'ID',
@@ -139,18 +131,12 @@ OwnTableHead.propTypes = {
   rowCount: PropTypes.number.isRequired,
 }
 
-/* const filterClients = () => {
-    const filteredData = rows.filter((row) =>
-      row.name.toLowerCase().includes(filterValue.toLowerCase())
-    )
-    setFilteredRows(filteredData)
-} */
-
 TableToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
 }
 
 export const OwnTable = () => {
+  const DB_URL = 'http://localhost:8000/users'
   const [order, setOrder] = useState('asc')
   const [orderBy, setOrderBy] = useState('name')
   const [selected, setSelected] = useState([])
@@ -158,14 +144,7 @@ export const OwnTable = () => {
   const [filterRow, setFilterRow] = useState(false)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
-  const [rows, setRows] = useState([
-    createData('Mia Tremblay1', '637011271', '+972506407311', '29.53.136.101'),
-    createData('Mia Tremblay2', '637011272', '+972506407312', '29.53.136.102'),
-    createData('Mia Tremblay3', '637011273', '+972506407313', '29.53.136.103'),
-    createData('Mia Tremblay4', '637011274', '+972506407314', '29.53.136.104'),
-    createData('Mia Tremblay5', '637011275', '+972506407315', '29.53.136.105'),
-    createData('Mia Tremblay6', '637011276', '+972506407316', '29.53.136.106'),
-  ])
+  const [rows, setRows] = useState([])
   const [newUserDetails, setNewUserDetails] = useState({
     email: '',
     fullName: '',
@@ -179,26 +158,35 @@ export const OwnTable = () => {
     phoneNumber: '',
     ip: '',
   })
-  const [rowCount, setRowCount] = useState(rows.length); // Add this state
+  const [rowCount, setRowCount] = useState(rows?.length)
 
+  const fetchData = async () => {
+    console.log('fetchData called')
+    try {
+      const res = await axios.get(DB_URL)
+      setRows(res.data)
+    } catch (e) {
+      console.log(e)
+    }
+  };
 
   useEffect(() => {
-    // Update the rowCount whenever the rows or filterValues change
-    setRowCount(
-      stableSort(rows, getComparator(order, orderBy)).filter((row) => {
-        // Check each column's filter value and apply filtering if necessary
-        return (
-          row.name.toLowerCase().includes(filterValues.fullName.toLowerCase()) &&
-          row.id.toLowerCase().includes(filterValues.id.toLowerCase()) &&
-          row.phoneNumber.toLowerCase().includes(filterValues.phoneNumber.toLowerCase()) &&
-          row.ip.toLowerCase().includes(filterValues.ip.toLowerCase())
-        )
-      }).length
-    )
-    setPage(0) // Reset the page to 0 when filters change
-  }, [order, orderBy, rows, filterValues])
+    fetchData()
+  }, []);
+  
 
-  useEffect(() => {console.log('filterValuesfilterValues', filterValues)}, [filterValues])
+  useEffect(() => {
+    const filteredRows = stableSort(rows, getComparator(order, orderBy)).filter((row) => {
+      const fullNameMatch = row?.userName?.toLowerCase().includes(filterValues.fullName.toLowerCase());
+      const idMatch = row?.myId?.toLowerCase().includes(filterValues.id.toLowerCase());
+      const phoneNumberMatch = row?.phoneNumber?.toLowerCase().includes(filterValues.phoneNumber.toLowerCase());
+      const ipMatch = row?.ip?.toLowerCase().includes(filterValues.ip.toLowerCase());
+      return fullNameMatch && idMatch && phoneNumberMatch && ipMatch
+    })
+    setRowCount(filteredRows.length)
+    setPage(0)
+  }, [order, orderBy, rows, filterValues])
+  
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc'
@@ -208,7 +196,7 @@ export const OwnTable = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = rows.map((n) => n.name)
+      const newSelected = rows?.map((n) => n._id)
       setSelected(newSelected)
       return
     }
@@ -239,6 +227,38 @@ export const OwnTable = () => {
     setPage(newPage)
   }
 
+  const validateNewUserDetails = (userDetails) => {
+    // Regular expression patterns for validation
+    const namePattern = /^[A-Za-z\s]+$/
+    const idPattern = /^\d{9}$/
+    const phoneNumberPattern = /^(\+?\d{1,3})?[0-9]{6,}$/
+    const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    // Array to store error messages for invalid fields
+    const errorMessages = [];
+
+    // Check each field and apply the validation rules
+    if (!userDetails.fullName || !namePattern.test(userDetails.fullName)) {
+      errorMessages.push('fullName');
+    }
+    if (!userDetails.id || !idPattern.test(userDetails.id)) {
+      errorMessages.push('myId');
+    }
+    if (!userDetails.phone || !phoneNumberPattern.test(userDetails.phone)) {
+      errorMessages.push('phoneNumber');
+    }
+    if (!userDetails.ip || !ipPattern.test(userDetails.ip)) {
+      errorMessages.push('ip');
+    }
+    if (!userDetails.email || !emailPattern.test(userDetails.email)) {
+      errorMessages.push('email');
+    }
+
+    // Return the array of error messages
+    return errorMessages;
+  };
+
+
   const handleChangeNewUser = (event) => {
     const { name, value } = event.target
     setNewUserDetails({
@@ -256,26 +276,53 @@ export const OwnTable = () => {
     }))
   }
 
+  const newRecord = async () => {
+    const errorMessages = validateNewUserDetails(newUserDetails);
+
+    // Check if there are any validation errors
+    if (errorMessages.length > 0) {
+      // Handle the validation failure here
+      // Display error messages for invalid fields
+      console.log('Invalid user details:');
+      errorMessages.forEach((errorMessage) => {
+        console.log(errorMessage);
+      });
+      return;
+    }
+    await axios.post(DB_URL,
+      {
+        userName: newUserDetails.fullName,
+        email: newUserDetails.email,
+        myId: newUserDetails.id,
+        phoneNumber: newUserDetails.phone,
+        ip: newUserDetails.ip
+      }
+    )
+    /* TODO: need to empty the inputs */
+    fetchData()
+  }
+
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
+    const newRowsPerPage = parseInt(event.target.value, 10)
+    setRowsPerPage(newRowsPerPage)
     setPage(0)
   }
 
   const isSelected = (name) => selected.indexOf(name) !== -1
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows?.length) : 0
 
   const visibleRows = useMemo(
     () =>
       stableSort(rows, getComparator(order, orderBy)).filter((row) => {
         return (
-          row.name.toLowerCase().includes(filterValues.fullName.toLowerCase()) &&
-          row.id.toLowerCase().includes(filterValues.id.toLowerCase()) &&
-          row.phoneNumber.toLowerCase().includes(filterValues.phoneNumber.toLowerCase()) &&
-          row.ip.toLowerCase().includes(filterValues.ip.toLowerCase())
+          row?.userName?.toLowerCase().includes(filterValues.fullName.toLowerCase()) &&
+          row?.myId?.toLowerCase().includes(filterValues.id.toLowerCase()) &&
+          row?.phoneNumber?.toLowerCase().includes(filterValues.phoneNumber.toLowerCase()) &&
+          row?.ip?.toLowerCase().includes(filterValues.ip.toLowerCase())
         )
       }).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [order, orderBy, rows, filterValues, page]
+    [order, orderBy, rows, filterValues, page, rowsPerPage]
   )
 
   return (
@@ -289,7 +336,8 @@ export const OwnTable = () => {
                       rows={rows}
                       setRows={setRows}
                       filterRow={filterRow}
-                      setFilterRow={setFilterRow}/>
+                      setFilterRow={setFilterRow}
+                      fetchData={fetchData} />
         <TableContainer>
           <Table sx={{ minWidth: 750 }}
                  aria-labelledby="tableTitle" >
@@ -298,7 +346,7 @@ export const OwnTable = () => {
                           orderBy={orderBy}
                           onSelectAllClick={handleSelectAllClick}
                           onRequestSort={handleRequestSort}
-                          rowCount={rows.length}
+                          rowCount={rows?.length}
                           setAddData={setAddData}
                           addData={addData} />
             <TableBody>
@@ -306,36 +354,36 @@ export const OwnTable = () => {
                       role="add-row"
                       tabIndex={-1}>
                 <TableCell>
-                <Input color="primary"
+                <Input color={validateNewUserDetails(newUserDetails).includes("email") ? "error" : "primary"}
                            placeholder='Email'
                            name="email"
                            value={newUserDetails.email}
                            onChange={handleChangeNewUser} />
                 </TableCell>
                 <TableCell padding="checkbox">
-                    <Input color="primary"
+                    <Input color={validateNewUserDetails(newUserDetails).includes("fullName") ? "error" : "primary"}
                            placeholder='Full Name'
                            name="fullName"
                            value={newUserDetails.fullName}
                            onChange={handleChangeNewUser} />
                 </TableCell>
                 <TableCell padding="checkbox">
-                    <Input color="primary"
+                    <Input color={validateNewUserDetails(newUserDetails).includes("myId") ? "error" : "primary"}
                            placeholder='ID'
                            name="id"
                            value={newUserDetails.id}
                            onChange={handleChangeNewUser} />
                 </TableCell>
                 <TableCell padding="checkbox">
-                    <Input color="primary"
+                    <Input color={validateNewUserDetails(newUserDetails).includes("phoneNumber") ? "error" : "primary"}
                            placeholder='Phone Number'
                            type="phoneNumber"
-                           name="phoneNumber"
+                           name="phone"
                            value={newUserDetails.phone}
                            onChange={handleChangeNewUser} />
                 </TableCell>
                 <TableCell padding="checkbox">
-                    <Input color="primary"
+                    <Input color={validateNewUserDetails(newUserDetails).includes("ip") ? "error" : "primary"}
                            placeholder='IP Address'
                            name="ip"
                            value={newUserDetails.ip}
@@ -343,7 +391,7 @@ export const OwnTable = () => {
                 </TableCell>
                 <TableCell padding="checkbox">
                 <Tooltip title="Save new client">
-                    <IconButton> {/* TODO: add newRecord function */}
+                    <IconButton onClick={newRecord}>
                         <DoneIcon />
                     </IconButton>
                     </Tooltip>
@@ -386,20 +434,17 @@ export const OwnTable = () => {
                 </TableCell>
             </TableRow>}
               {visibleRows.map((row, index) => {
-                const isItemSelected = isSelected(row.name)
+                const isItemSelected = isSelected(row?._id)
                 const labelId = `enhanced-table-checkbox-${index}`
-
                 return (
-                  <TableRow
-                    hover
-                    onClick={(event) => handleClick(event, row.name)}
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    key={row.name}
-                    selected={isItemSelected}
-                    sx={{ cursor: 'pointer' }}
-                  >
+                  <TableRow hover
+                            onClick={(event) => handleClick(event, row?._id)}
+                            role="checkbox"
+                            aria-checked={isItemSelected}
+                            tabIndex={-1}
+                            key={row?._id}
+                            selected={isItemSelected}
+                            sx={{ cursor: 'pointer' }} >
                     <TableCell padding="checkbox">
                       <Checkbox
                         color="primary"
@@ -413,11 +458,11 @@ export const OwnTable = () => {
                                id={labelId}
                                scope="row"
                                padding="none">
-                      {row.name}
+                      {row?.userName}
                     </TableCell>
-                    <TableCell align="center">{row.id}</TableCell>
-                    <TableCell align="center">{row.phoneNumber}</TableCell>
-                    <TableCell align="center">{row.ip}</TableCell>
+                    <TableCell align="center">{row?.myId}</TableCell>
+                    <TableCell align="center">{row?.phoneNumber}</TableCell>
+                    <TableCell align="center">{row?.ip}</TableCell>
                     {addData && <TableCell />}
                   </TableRow>
                 )
@@ -437,12 +482,9 @@ export const OwnTable = () => {
                          page={page}
                          onPageChange={handleChangePage}
                          onRowsPerPageChange={handleChangeRowsPerPage} />
-        {/* TODO: remove this {selected.map(selected => <div>{selected}</div>)} */}
-        {/* TODO: {rows.map(visibleRow => {
-            return (
-                <div>{visibleRow.name}|{visibleRow.id}</div>
-            )
-        })} */}
+
+        {/* {visibleRows.map(row => console.log(row))}
+        {isSelected} */}
       </Paper>
     </Box>
   )
