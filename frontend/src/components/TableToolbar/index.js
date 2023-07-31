@@ -9,7 +9,7 @@ import { alpha } from '@mui/material/styles'
 import axios from 'axios'
 
 
-export const TableToolbar = ({numSelected, setAddData, addData, selected, setSelected, rows, setRows, filterRow, setFilterRow, fetchData}) => {
+export const TableToolbar = ({numSelected, setAddData, addData, selected, setSelected, filterRow, setFilterRow, fetchData}) => {
   const DB_URL = 'http://localhost:8000/users'
 
   const deleteSelectedItems = async () => {
@@ -22,7 +22,6 @@ export const TableToolbar = ({numSelected, setAddData, addData, selected, setSel
       await fetchData()
     })
     setSelected([])
-    console.log('selected', selected)
   }
   
   return (

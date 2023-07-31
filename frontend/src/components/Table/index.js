@@ -5,10 +5,8 @@ import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
 import TablePagination from '@mui/material/TablePagination'
 import TableRow from '@mui/material/TableRow'
-import TableSortLabel from '@mui/material/TableSortLabel'
 import Paper from '@mui/material/Paper'
 import Checkbox from '@mui/material/Checkbox'
 import Input from '@mui/material/Input'
@@ -16,9 +14,9 @@ import CloseIcon from '@mui/icons-material/Close'
 import DoneIcon from '@mui/icons-material/Done'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
-import { visuallyHidden } from '@mui/utils'
 import '../../style/OwnTable.css'
 import {TableToolbar} from '../TableToolbar'
+import {OwnTableHead} from '../OwnTableHead'
 import axios from 'axios'
 
 function descendingComparator(a, b, orderBy) {
@@ -47,79 +45,6 @@ function stableSort(array, comparator) {
     return a[1] - b[1]
   })
   return stabilizedThis.map((el) => el[0])
-}
-
-const headCells = [
-  {
-    id: 'userName',
-    numeric: false,
-    disablePadding: true,
-    label: 'Full Name',
-  },
-  {
-    id: 'myId',
-    numeric: false,
-    disablePadding: false,
-    label: 'ID',
-  },
-  {
-    id: 'phoneNumber',
-    numeric: false,
-    disablePadding: false,
-    label: 'Phone Number',
-  },
-  {
-    id: 'ip',
-    numeric: false,
-    disablePadding: false,
-    label: 'IP Address',
-  },
-]
-
-function OwnTableHead({ onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, addData }) {
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property)
-  }
-
-  return (
-    <TableHead>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="primary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{
-              'aria-label': 'select all desserts',
-            }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align='left'
-            padding={headCell.disablePadding ? 'none' : 'normal'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-        {addData && <TableCell />}
-      </TableRow>
-    </TableHead>
-  )
 }
 
 OwnTableHead.propTypes = {
@@ -161,26 +86,25 @@ export const OwnTable = () => {
   const [rowCount, setRowCount] = useState(rows?.length)
 
   const fetchData = async () => {
-    console.log('fetchData called')
     try {
       const res = await axios.get(DB_URL)
       setRows(res.data)
     } catch (e) {
       console.log(e)
     }
-  };
+  }
 
   useEffect(() => {
     fetchData()
-  }, []);
+  }, [])
   
 
   useEffect(() => {
     const filteredRows = stableSort(rows, getComparator(order, orderBy)).filter((row) => {
-      const fullNameMatch = row?.userName?.toLowerCase().includes(filterValues.fullName.toLowerCase());
-      const idMatch = row?.myId?.toLowerCase().includes(filterValues.id.toLowerCase());
-      const phoneNumberMatch = row?.phoneNumber?.toLowerCase().includes(filterValues.phoneNumber.toLowerCase());
-      const ipMatch = row?.ip?.toLowerCase().includes(filterValues.ip.toLowerCase());
+      const fullNameMatch = row?.userName?.toLowerCase().includes(filterValues.fullName.toLowerCase())
+      const idMatch = row?.myId?.toLowerCase().includes(filterValues.id.toLowerCase())
+      const phoneNumberMatch = row?.phoneNumber?.toLowerCase().includes(filterValues.phoneNumber.toLowerCase())
+      const ipMatch = row?.ip?.toLowerCase().includes(filterValues.ip.toLowerCase())
       return fullNameMatch && idMatch && phoneNumberMatch && ipMatch
     })
     setRowCount(filteredRows.length)
@@ -228,35 +152,29 @@ export const OwnTable = () => {
   }
 
   const validateNewUserDetails = (userDetails) => {
-    // Regular expression patterns for validation
     const namePattern = /^[A-Za-z\s]+$/
     const idPattern = /^\d{9}$/
     const phoneNumberPattern = /^(\+?\d{1,3})?[0-9]{6,}$/
     const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    // Array to store error messages for invalid fields
-    const errorMessages = [];
-
-    // Check each field and apply the validation rules
+    const errorMessages = []
     if (!userDetails.fullName || !namePattern.test(userDetails.fullName)) {
-      errorMessages.push('fullName');
+      errorMessages.push('fullName')
     }
     if (!userDetails.id || !idPattern.test(userDetails.id)) {
-      errorMessages.push('myId');
+      errorMessages.push('myId')
     }
     if (!userDetails.phone || !phoneNumberPattern.test(userDetails.phone)) {
-      errorMessages.push('phoneNumber');
+      errorMessages.push('phoneNumber')
     }
     if (!userDetails.ip || !ipPattern.test(userDetails.ip)) {
-      errorMessages.push('ip');
+      errorMessages.push('ip')
     }
     if (!userDetails.email || !emailPattern.test(userDetails.email)) {
-      errorMessages.push('email');
+      errorMessages.push('email')
     }
-
-    // Return the array of error messages
-    return errorMessages;
-  };
+    return errorMessages
+  }
 
 
   const handleChangeNewUser = (event) => {
@@ -268,8 +186,7 @@ export const OwnTable = () => {
   }
 
   const handleFilter = (event) => {
-    const { name, value } = event.target;
-    console.log('handleFilter value', value)
+    const { name, value } = event.target
     setFilterValues((prevFilterValues) => ({
     ...prevFilterValues,
       [name]: value,
@@ -277,17 +194,9 @@ export const OwnTable = () => {
   }
 
   const newRecord = async () => {
-    const errorMessages = validateNewUserDetails(newUserDetails);
-
-    // Check if there are any validation errors
+    const errorMessages = validateNewUserDetails(newUserDetails)
     if (errorMessages.length > 0) {
-      // Handle the validation failure here
-      // Display error messages for invalid fields
-      console.log('Invalid user details:');
-      errorMessages.forEach((errorMessage) => {
-        console.log(errorMessage);
-      });
-      return;
+      return
     }
     await axios.post(DB_URL,
       {
@@ -298,7 +207,13 @@ export const OwnTable = () => {
         ip: newUserDetails.ip
       }
     )
-    /* TODO: need to empty the inputs */
+    setNewUserDetails({
+      email: '',
+      fullName: '',
+      id: '',
+      phone: '',
+      ip: '',
+    })
     fetchData()
   }
 
@@ -333,8 +248,6 @@ export const OwnTable = () => {
                       addData={addData}
                       selected={selected}
                       setSelected={setSelected}
-                      rows={rows}
-                      setRows={setRows}
                       filterRow={filterRow}
                       setFilterRow={setFilterRow}
                       fetchData={fetchData} />

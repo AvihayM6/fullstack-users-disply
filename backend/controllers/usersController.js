@@ -25,7 +25,6 @@ const createUser = async (req,res) => {
         phoneNumber: dbUser.phoneNumber,
         ip: dbUser.ip,
       })
-    console.log('newUser', newUser)
     res.status(201).send(newUser)
   }
   catch (err) {
